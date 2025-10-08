@@ -1,0 +1,28 @@
+# General
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.xcworkspace/xcuserdata/
+
+# Swift Package Manager
+.build/
+
+# Logs
+build.log
+
+# Vim / Emacs / Editors
+*~
+*.swp
+*.swo
+
+.env
