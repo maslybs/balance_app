@@ -4,6 +4,10 @@ struct ContentView: View {
     @StateObject private var viewModel = ContentViewModel()
     @State private var isSettingsVisible = false
     
+    private let cardWidth: CGFloat = 220
+    private let cardSpacing: CGFloat = 16
+    private let columnLimit: Int = 3
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
@@ -37,11 +41,21 @@ struct ContentView: View {
                     }
                     
                     if viewModel.privatBalances.isEmpty == false {
-                        BalanceProviderSection(title: "PrivatBank (ФОП)", systemImage: "creditcard.fill", balances: viewModel.privatBalances)
+                        BalanceProviderSection(title: "PrivatBank (ФОП)",
+                                               systemImage: "creditcard.fill",
+                                               balances: viewModel.privatBalances,
+                                               columns: columns(for: viewModel.privatBalances.count),
+                                               cardWidth: cardWidth,
+                                               cardSpacing: cardSpacing)
                     }
-                    
+
                     if viewModel.wiseBalances.isEmpty == false {
-                        BalanceProviderSection(title: "Wise", systemImage: "globe", balances: viewModel.wiseBalances)
+                        BalanceProviderSection(title: "Wise",
+                                               systemImage: "globe",
+                                               balances: viewModel.wiseBalances,
+                                               columns: columns(for: viewModel.wiseBalances.count),
+                                               cardWidth: cardWidth,
+                                               cardSpacing: cardSpacing)
                     }
                     
                     if viewModel.exchangeRates.isEmpty == false {
@@ -62,7 +76,7 @@ struct ContentView: View {
             footer
         }
         .padding(16)
-        .frame(minWidth: 620, idealWidth: 680, maxWidth: 720, minHeight: 520, idealHeight: 600, maxHeight: 720)
+        .frame(minWidth: preferredWidth, idealWidth: preferredWidth, maxWidth: preferredWidth, minHeight: 520, idealHeight: 600, maxHeight: 720)
         .task {
             await viewModel.loadAllData()
         }
@@ -117,6 +131,24 @@ struct ContentView: View {
             }
         }
     }
+    
+    private var currentColumnCount: Int {
+        let maxCount = max(viewModel.privatBalances.count, viewModel.wiseBalances.count)
+        return max(2, min(columnLimit, maxCount))
+    }
+    
+    private var preferredWidth: CGFloat {
+        let columns = currentColumnCount
+        let cardsWidth = CGFloat(columns) * cardWidth
+        let spacingWidth = CGFloat(max(columns - 1, 0)) * cardSpacing
+        let contentWidth = cardsWidth + spacingWidth
+        return max(contentWidth + 32, 620) // account for horizontal padding
+    }
+    
+    private func columns(for count: Int) -> Int {
+        let effective = max(count, 1)
+        return max(2, min(columnLimit, effective))
+    }
 }
 
 
@@ -169,22 +201,24 @@ private struct TotalsView: View {
     let totals: [CurrencyTotal]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             Label("Загальна сума по всіх рахунках", systemImage: "sum")
-                .font(.callout.weight(.semibold))
-            ForEach(totals) { total in
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(total.currencyCode)
-                        .fontWeight(.medium)
-                    Text(total.formattedTotal)
-                        .monospacedDigit()
+                .font(.headline)
+            HStack(alignment: .firstTextBaseline, spacing: 24) {
+                ForEach(totals) { total in
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(total.currencyCode)
+                            .font(.title3.weight(.semibold))
+                        Text(total.formattedTotal)
+                            .font(.title3.weight(.semibold))
+                            .monospacedDigit()
+                    }
                 }
-                .font(.footnote)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(16)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -192,14 +226,17 @@ private struct BalanceProviderSection: View {
     let title: String
     let systemImage: String
     let balances: [BalanceItem]
+    let columns: Int
+    let cardWidth: CGFloat
+    let cardSpacing: CGFloat
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label(title, systemImage: systemImage)
                 .font(.headline)
-            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 16) {
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: cardSpacing) {
                 ForEach(sortedBalances) { item in
-                    BalanceCard(item: item)
+                    BalanceCard(item: item, cardWidth: cardWidth)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -207,13 +244,16 @@ private struct BalanceProviderSection: View {
     }
     
     private var gridColumns: [GridItem] {
-        [
-            GridItem(.adaptive(minimum: 200, maximum: 220), spacing: 16, alignment: .top)
-        ]
+        let count = max(2, min(columns, 3))
+        return Array(
+            repeating: GridItem(.fixed(cardWidth), spacing: cardSpacing, alignment: .top),
+            count: count
+        )
     }
     
     private struct BalanceCard: View {
         let item: BalanceItem
+        let cardWidth: CGFloat
         
         var body: some View {
             let style = cardStyle(for: item)
@@ -234,7 +274,7 @@ private struct BalanceProviderSection: View {
                 }
             }
             .padding(16)
-            .frame(width: 220, alignment: .leading)
+            .frame(width: cardWidth, alignment: .leading)
             .background(style.background, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
