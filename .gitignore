@@ -26,3 +26,6 @@ build.log
 *.swo
 
 .env
+/releases/BalanceApp.app
+
+
