@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var preferences = ProviderPreferences.shared
     
     @State private var privatToken: String = ""
     @State private var wiseToken: String = ""
@@ -12,6 +13,15 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Налаштування API")
                 .font(.title3.weight(.semibold))
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Відображення банків")
+                    .font(.headline)
+                Toggle("PrivatBank (ФОП)", isOn: binding(for: .privatBank))
+                Toggle("Wise", isOn: binding(for: .wise))
+            }
+            
+            Divider()
             
             VStack(alignment: .leading, spacing: 12) {
                 Text("PrivatBank (ФОП)")
@@ -98,6 +108,13 @@ struct SettingsView: View {
             statusColor = .red
             statusMessage = error.localizedDescription
         }
+    }
+    
+    private func binding(for provider: BalanceProvider) -> Binding<Bool> {
+        Binding(
+            get: { preferences.isEnabled(provider) },
+            set: { preferences.set(provider, enabled: $0) }
+        )
     }
 }
 

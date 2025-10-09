@@ -23,6 +23,15 @@ enum BalanceProvider: String, Identifiable, CaseIterable {
             return "globe"
         }
     }
+    
+    var preferenceDefaultsKey: String {
+        switch self {
+        case .privatBank:
+            return "settings.provider.privatBank.enabled"
+        case .wise:
+            return "settings.provider.wise.enabled"
+        }
+    }
 }
 
 struct BalanceItem: Identifiable, Hashable {

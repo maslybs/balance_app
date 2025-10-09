@@ -17,6 +17,9 @@
 		B9F4F6842956C60000AA0037 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0017 /* APIService.swift */; };
 		B9F4F6842956C60000AA0038 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0018 /* KeychainHelper.swift */; };
 		B9F4F6842956C60000AA0039 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0019 /* SettingsView.swift */; };
+		B9F4F6842956C60000AA0040 /* ProviderPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0041 /* ProviderPreferences.swift */; };
+		B9F4F6842956C60000AA0042 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0043 /* AppDelegate.swift */; };
+		B9F4F6842956C60000AA0044 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0045 /* StatusBarController.swift */; };
 		B9F4F6842956C60000AA003A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA001A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -32,6 +35,9 @@
 		B9F4F6842956C60000AA0017 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		B9F4F6842956C60000AA0018 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 		B9F4F6842956C60000AA0019 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B9F4F6842956C60000AA0041 /* ProviderPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderPreferences.swift; sourceTree = "<group>"; };
+		B9F4F6842956C60000AA0043 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		B9F4F6842956C60000AA0045 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		B9F4F6842956C60000AA001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -66,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				B9F4F6842956C60000AA0010 /* BalanceApp.swift */,
+				B9F4F6842956C60000AA0043 /* AppDelegate.swift */,
 				B9F4F6842956C60000AA0011 /* ContentView.swift */,
 				B9F4F6842956C60000AA0012 /* ContentViewModel.swift */,
 				B9F4F6842956C60000AA0021 /* Models */,
@@ -82,6 +89,7 @@
 				B9F4F6842956C60000AA0013 /* AppConstants.swift */,
 				B9F4F6842956C60000AA0014 /* Decoding.swift */,
 				B9F4F6842956C60000AA0015 /* Formatters.swift */,
+				B9F4F6842956C60000AA0041 /* ProviderPreferences.swift */,
 				B9F4F6842956C60000AA0016 /* Models.swift */,
 			);
 			path = Models;
@@ -92,6 +100,7 @@
 			children = (
 				B9F4F6842956C60000AA0017 /* APIService.swift */,
 				B9F4F6842956C60000AA0018 /* KeychainHelper.swift */,
+				B9F4F6842956C60000AA0045 /* StatusBarController.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -180,9 +189,12 @@
 				B9F4F6842956C60000AA0039 /* SettingsView.swift in Sources */,
 				B9F4F6842956C60000AA0036 /* Models.swift in Sources */,
 				B9F4F6842956C60000AA0032 /* ContentViewModel.swift in Sources */,
+				B9F4F6842956C60000AA0042 /* AppDelegate.swift in Sources */,
 				B9F4F6842956C60000AA0038 /* KeychainHelper.swift in Sources */,
+				B9F4F6842956C60000AA0040 /* ProviderPreferences.swift in Sources */,
 				B9F4F6842956C60000AA0030 /* BalanceApp.swift in Sources */,
 				B9F4F6842956C60000AA0034 /* Decoding.swift in Sources */,
+				B9F4F6842956C60000AA0044 /* StatusBarController.swift in Sources */,
 				B9F4F6842956C60000AA0031 /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -327,6 +339,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Balance App";
 				INFOPLIST_KEY_CFBundleName = BalanceApp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_LSUIElement = 1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -357,6 +370,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Balance App";
 				INFOPLIST_KEY_CFBundleName = BalanceApp;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_LSUIElement = 1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

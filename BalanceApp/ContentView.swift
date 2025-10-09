@@ -1,12 +1,18 @@
 import SwiftUI
+import AppKit
 
 struct ContentView: View {
-    @StateObject private var viewModel = ContentViewModel()
+    @StateObject private var viewModel: ContentViewModel
     @State private var isSettingsVisible = false
     
     private let cardWidth: CGFloat = 220
     private let cardSpacing: CGFloat = 16
     private let columnLimit: Int = 3
+    
+    init() {
+        let sharedPreferences = ProviderPreferences.shared
+        _viewModel = StateObject(wrappedValue: ContentViewModel(preferences: sharedPreferences))
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -15,7 +21,8 @@ struct ContentView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     if isSettingsVisible {
-                        InlineSettingsView(isVisible: $isSettingsVisible) {
+                        InlineSettingsView(viewModel: viewModel,
+                                           isVisible: $isSettingsVisible) {
                             Task {
                                 await viewModel.refreshManually()
                             }
@@ -119,15 +126,23 @@ struct ContentView: View {
             .disabled(viewModel.isLoading)
             
             Spacer()
-            
-            if viewModel.isLoading {
-                Text("Завантаження...")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Готово")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 12) {
+                if viewModel.isLoading {
+                    Text("Завантаження...")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Готово")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Button(role: .destructive) {
+                    quitApp()
+                } label: {
+                    Label("Вийти", systemImage: "power")
+                }
+                .help("Вийти з програми")
             }
         }
     }
@@ -149,6 +164,10 @@ struct ContentView: View {
         let effective = max(count, 1)
         return max(2, min(columnLimit, effective))
     }
+    
+    private func quitApp() {
+        NSApplication.shared.terminate(nil)
+    }
 }
 
 
@@ -157,9 +176,12 @@ private struct MissingTokensView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Додайте токени для доступу до даних", systemImage: "exclamationmark.triangle.fill")
+            Label("Відсутні токени для увімкнених банків", systemImage: "exclamationmark.triangle.fill")
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(.orange)
+            Text("Увімкнені банки без токена:")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
             ForEach(sortedProviders) { provider in
                 Text("- \(provider.displayName)")
                     .font(.caption)
@@ -366,6 +388,7 @@ private struct EmptyStateView: View {
 }
 
 private struct InlineSettingsView: View {
+    @ObservedObject var viewModel: ContentViewModel
     @Binding var isVisible: Bool
     var onSaved: () -> Void
     
@@ -393,9 +416,18 @@ private struct InlineSettingsView: View {
             }
             .padding(.bottom, 4)
             
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Відображення банків")
+                    .font(.subheadline.weight(.semibold))
+                Toggle("PrivatBank (ФОП)", isOn: binding(for: .privatBank))
+                Toggle("Wise", isOn: binding(for: .wise))
+            }
+            
+            Divider()
+            
             VStack(alignment: .leading, spacing: 12) {
                 Text("PrivatBank (ФОП)")
-            .font(.subheadline.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                 SecureField("Введіть токен PrivatBank (ФОП)", text: $privatToken)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.password)
@@ -494,5 +526,12 @@ private struct InlineSettingsView: View {
             statusColor = .red
             statusMessage = error.localizedDescription
         }
+    }
+    
+    private func binding(for provider: BalanceProvider) -> Binding<Bool> {
+        Binding(
+            get: { viewModel.isProviderEnabled(provider) },
+            set: { viewModel.setProvider(provider, enabled: $0) }
+        )
     }
 }

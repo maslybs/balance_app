@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 @MainActor
 final class ContentViewModel: ObservableObject {
@@ -10,11 +11,29 @@ final class ContentViewModel: ObservableObject {
     @Published private(set) var lastUpdated: Date?
     @Published private(set) var errorMessages: [String] = []
     @Published private(set) var missingTokens: Set<BalanceProvider> = []
+    @Published private(set) var enabledProviders: Set<BalanceProvider>
     
     private let apiService: APIService
+    private let preferences: ProviderPreferences
+    private var cancellables = Set<AnyCancellable>()
     
-    init(apiService: APIService = .shared) {
+    init(apiService: APIService = .shared, preferences: ProviderPreferences? = nil) {
         self.apiService = apiService
+        let resolvedPreferences = preferences ?? ProviderPreferences.shared
+        self.preferences = resolvedPreferences
+        self.enabledProviders = resolvedPreferences.enabledProviders
+        
+        resolvedPreferences.$enabledProviders
+            .dropFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] newValue in
+                guard let self else { return }
+                self.enabledProviders = newValue
+                Task {
+                    await self.loadAllData()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func loadAllData() async {
@@ -26,16 +45,25 @@ final class ContentViewModel: ObservableObject {
         missingTokens.removeAll()
         
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { [weak self] in
-                await self?.loadPrivatBalances()
+            if isProviderEnabled(.privatBank) {
+                group.addTask { [weak self] in
+                    await self?.loadPrivatBalances()
+                }
+            } else {
+                privatBalances = []
             }
             
-            group.addTask { [weak self] in
-                await self?.loadWiseBalances()
-            }
-            
-            group.addTask { [weak self] in
-                await self?.loadExchangeRates()
+            if isProviderEnabled(.wise) {
+                group.addTask { [weak self] in
+                    await self?.loadWiseBalances()
+                }
+                
+                group.addTask { [weak self] in
+                    await self?.loadExchangeRates()
+                }
+            } else {
+                wiseBalances = []
+                exchangeRates = []
             }
         }
         
@@ -50,6 +78,28 @@ final class ContentViewModel: ObservableObject {
     
     func refreshManually() async {
         await loadAllData()
+    }
+    
+    func setProvider(_ provider: BalanceProvider, enabled: Bool) {
+        preferences.set(provider, enabled: enabled)
+        if enabled == false {
+            switch provider {
+            case .privatBank:
+                privatBalances = []
+            case .wise:
+                wiseBalances = []
+                exchangeRates = []
+            }
+            missingTokens.remove(provider)
+            rebuildTotals()
+            if privatBalances.isEmpty && wiseBalances.isEmpty && exchangeRates.isEmpty {
+                lastUpdated = nil
+            }
+        }
+    }
+    
+    func isProviderEnabled(_ provider: BalanceProvider) -> Bool {
+        enabledProviders.contains(provider)
     }
     
     private func loadPrivatBalances() async {

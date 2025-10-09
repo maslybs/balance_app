@@ -2,10 +2,11 @@ import SwiftUI
 
 @main
 struct BalanceApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    
     var body: some Scene {
-        MenuBarExtra("Balance App", systemImage: "dollarsign.circle.fill") {
-            ContentView()
+        Settings {
+            SettingsView()
         }
-        .menuBarExtraStyle(.window)
     }
 }
