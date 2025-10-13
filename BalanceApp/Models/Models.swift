@@ -3,6 +3,7 @@ import Foundation
 enum BalanceProvider: String, Identifiable, CaseIterable {
     case privatBank = "PrivatBank (ФОП)"
     case wise = "Wise"
+    case manualAccounts = "Власні рахунки"
     
     var id: String { rawValue }
     
@@ -12,6 +13,8 @@ enum BalanceProvider: String, Identifiable, CaseIterable {
             return "PrivatBank (ФОП)"
         case .wise:
             return "Wise"
+        case .manualAccounts:
+            return "Власні рахунки"
         }
     }
     
@@ -21,6 +24,8 @@ enum BalanceProvider: String, Identifiable, CaseIterable {
             return "creditcard.fill"
         case .wise:
             return "globe"
+        case .manualAccounts:
+            return "tray.full"
         }
     }
     
@@ -30,7 +35,13 @@ enum BalanceProvider: String, Identifiable, CaseIterable {
             return "settings.provider.privatBank.enabled"
         case .wise:
             return "settings.provider.wise.enabled"
+        case .manualAccounts:
+            return "settings.provider.manual.enabled"
         }
+    }
+    
+    static var remoteProviders: [BalanceProvider] {
+        [.privatBank, .wise]
     }
 }
 

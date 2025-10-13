@@ -59,13 +59,20 @@ final class StatusBarController: NSObject {
     
     private func configureStatusItem() {
         guard let button = statusItem.button else { return }
-        let symbolConfig = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
-        button.image = NSImage(systemSymbolName: "dollarsign.circle.fill", accessibilityDescription: "Balance App")?
-            .withSymbolConfiguration(symbolConfig)
+        let image = preferredStatusImage()
+        button.image = image
+        button.image?.isTemplate = false
+        button.imagePosition = .imageOnly
         button.action = #selector(handleClick(_:))
         button.target = self
         button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         button.toolTip = "Balance App"
+    }
+    
+    private func preferredStatusImage() -> NSImage {
+        let symbolConfig = NSImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        return NSImage(systemSymbolName: "dollarsign.circle.fill", accessibilityDescription: "Balance App")?
+            .withSymbolConfiguration(symbolConfig) ?? NSImage(size: NSSize(width: 18, height: 18))
     }
     
     private func togglePopover(_ sender: Any?) {

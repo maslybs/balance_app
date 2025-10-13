@@ -3,9 +3,11 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var preferences = ProviderPreferences.shared
-    
+    @ObservedObject private var manualAccountsStore = ManualAccountsStore.shared
+
     @State private var privatToken: String = ""
     @State private var wiseToken: String = ""
+    @State private var manualDrafts: [ManualAccountDraft] = []
     @State private var statusMessage: String?
     @State private var statusColor: Color = .green
     
@@ -22,7 +24,7 @@ struct SettingsView: View {
             }
             
             Divider()
-            
+
             VStack(alignment: .leading, spacing: 12) {
                 Text("PrivatBank (ФОП)")
                     .font(.headline)
@@ -36,6 +38,10 @@ struct SettingsView: View {
                     .textContentType(.password)
                 HelperTextView()
             }
+
+            Divider()
+
+            ManualAccountsEditorView(drafts: $manualDrafts)
             
             if let statusMessage {
                 Text(statusMessage)
@@ -54,26 +60,27 @@ struct SettingsView: View {
                     Label("Очистити", systemImage: "trash")
                 }
                 Button {
-                    saveTokens()
+                    saveSettings()
                 } label: {
                     Label("Зберегти", systemImage: "checkmark")
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(privatToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-                          wiseToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(24)
         .frame(minWidth: 360)
-        .onAppear(perform: loadTokens)
+        .onAppear {
+            loadTokens()
+            loadManualAccounts()
+        }
     }
-    
+
     private func loadTokens() {
         privatToken = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.privatToken) ?? ""
         wiseToken = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.wiseToken) ?? ""
     }
-    
-    private func saveTokens() {
+
+    private func saveSettings() {
         let privatValue = privatToken.trimmingCharacters(in: .whitespacesAndNewlines)
         let wiseValue = wiseToken.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
@@ -88,8 +95,10 @@ struct SettingsView: View {
             } else {
                 try KeychainHelper.shared.saveToken(wiseValue, forKey: KeychainKey.wiseToken)
             }
+            let manualAccounts = try buildManualAccounts()
+            manualAccountsStore.replace(with: manualAccounts)
             statusColor = .green
-            statusMessage = "Токени збережено успішно."
+            statusMessage = "Налаштування збережено успішно."
         } catch {
             statusColor = .red
             statusMessage = error.localizedDescription
@@ -108,6 +117,14 @@ struct SettingsView: View {
             statusColor = .red
             statusMessage = error.localizedDescription
         }
+    }
+
+    private func loadManualAccounts() {
+        manualDrafts = manualAccountsStore.accounts.map(ManualAccountDraft.init)
+    }
+
+    private func buildManualAccounts() throws -> [ManualAccount] {
+        try manualDrafts.map { try $0.validatedAccount() }
     }
     
     private func binding(for provider: BalanceProvider) -> Binding<Bool> {

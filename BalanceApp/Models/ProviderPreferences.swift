@@ -15,10 +15,14 @@ final class ProviderPreferences: ObservableObject {
     }
     
     func isEnabled(_ provider: BalanceProvider) -> Bool {
-        enabledProviders.contains(provider)
+        if provider == .manualAccounts {
+            return true
+        }
+        return enabledProviders.contains(provider)
     }
     
     func set(_ provider: BalanceProvider, enabled: Bool) {
+        guard provider != .manualAccounts else { return }
         if enabled {
             enabledProviders.insert(provider)
         } else {
@@ -28,7 +32,7 @@ final class ProviderPreferences: ObservableObject {
     }
     
     private static func loadEnabledProviders(from defaults: UserDefaults) -> Set<BalanceProvider> {
-        let available = BalanceProvider.allCases
+        let available = BalanceProvider.remoteProviders
         var enabledSet = Set<BalanceProvider>()
         for provider in available {
             if defaults.object(forKey: provider.preferenceDefaultsKey) == nil {

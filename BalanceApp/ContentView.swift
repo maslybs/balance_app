@@ -47,6 +47,15 @@ struct ContentView: View {
                         TotalsView(totals: viewModel.totals)
                     }
                     
+                    if viewModel.manualBalances.isEmpty == false {
+                        BalanceProviderSection(title: "Власні рахунки",
+                                               systemImage: BalanceProvider.manualAccounts.accentSystemImageName,
+                                               balances: viewModel.manualBalances,
+                                               columns: columns(for: viewModel.manualBalances.count),
+                                               cardWidth: cardWidth,
+                                               cardSpacing: cardSpacing)
+                    }
+                    
                     if viewModel.privatBalances.isEmpty == false {
                         BalanceProviderSection(title: "PrivatBank (ФОП)",
                                                systemImage: "creditcard.fill",
@@ -73,7 +82,8 @@ struct ContentView: View {
                         viewModel.missingTokens.isEmpty &&
                         viewModel.errorMessages.isEmpty &&
                         viewModel.privatBalances.isEmpty &&
-                        viewModel.wiseBalances.isEmpty {
+                        viewModel.wiseBalances.isEmpty &&
+                        viewModel.manualBalances.isEmpty {
                         EmptyStateView()
                     }
                 }
@@ -148,7 +158,8 @@ struct ContentView: View {
     }
     
     private var currentColumnCount: Int {
-        let maxCount = max(viewModel.privatBalances.count, viewModel.wiseBalances.count)
+        let maxCount = max(viewModel.privatBalances.count,
+                           max(viewModel.wiseBalances.count, viewModel.manualBalances.count))
         return max(2, min(columnLimit, maxCount))
     }
     
@@ -377,7 +388,7 @@ private struct EmptyStateView: View {
             Text("Тут поки що порожньо")
                 .font(.callout)
                 .foregroundStyle(.secondary)
-            Text("Додайте токени та натисніть «Оновити», щоб завантажити дані.")
+            Text("Додайте токени або створіть власні рахунки, щоб побачити дані.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -394,8 +405,10 @@ private struct InlineSettingsView: View {
     
     @State private var privatToken: String = ""
     @State private var wiseToken: String = ""
+    @State private var manualDrafts: [ManualAccountDraft] = []
     @State private var statusMessage: String?
     @State private var statusColor: Color = .green
+    private let manualAccountsStore = ManualAccountsStore.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -451,7 +464,10 @@ private struct InlineSettingsView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.top, 4)
-            
+
+            Divider()
+            ManualAccountsEditorView(drafts: $manualDrafts)
+
             if let statusMessage {
                 Text(statusMessage)
                     .font(.caption)
@@ -471,7 +487,7 @@ private struct InlineSettingsView: View {
                     Label("Очистити", systemImage: "trash")
                 }
                 Button {
-                    saveTokens()
+                    saveSettings()
                 } label: {
                     Label("Зберегти", systemImage: "checkmark")
                 }
@@ -480,7 +496,10 @@ private struct InlineSettingsView: View {
         }
         .padding(16)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .onAppear(perform: loadTokens)
+        .onAppear {
+            loadTokens()
+            loadManualAccounts()
+        }
     }
     
     private func loadTokens() {
@@ -489,7 +508,7 @@ private struct InlineSettingsView: View {
         statusMessage = nil
     }
     
-    private func saveTokens() {
+    private func saveSettings() {
         let privatValue = privatToken.trimmingCharacters(in: .whitespacesAndNewlines)
         let wiseValue = wiseToken.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
@@ -503,6 +522,8 @@ private struct InlineSettingsView: View {
             } else {
                 try KeychainHelper.shared.saveToken(wiseValue, forKey: KeychainKey.wiseToken)
             }
+            let manualAccounts = try buildManualAccounts()
+            manualAccountsStore.replace(with: manualAccounts)
             statusMessage = nil
             withAnimation {
                 isVisible = false
@@ -528,6 +549,14 @@ private struct InlineSettingsView: View {
         }
     }
     
+    private func loadManualAccounts() {
+        manualDrafts = manualAccountsStore.accounts.map(ManualAccountDraft.init)
+    }
+
+    private func buildManualAccounts() throws -> [ManualAccount] {
+        try manualDrafts.map { try $0.validatedAccount() }
+    }
+
     private func binding(for provider: BalanceProvider) -> Binding<Bool> {
         Binding(
             get: { viewModel.isProviderEnabled(provider) },

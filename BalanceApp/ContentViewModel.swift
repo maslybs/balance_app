@@ -12,9 +12,11 @@ final class ContentViewModel: ObservableObject {
     @Published private(set) var errorMessages: [String] = []
     @Published private(set) var missingTokens: Set<BalanceProvider> = []
     @Published private(set) var enabledProviders: Set<BalanceProvider>
+    @Published private(set) var manualBalances: [BalanceItem] = []
     
     private let apiService: APIService
     private let preferences: ProviderPreferences
+    private let manualAccountsStore: ManualAccountsStore
     private var cancellables = Set<AnyCancellable>()
     
     init(apiService: APIService = .shared, preferences: ProviderPreferences? = nil) {
@@ -22,6 +24,7 @@ final class ContentViewModel: ObservableObject {
         let resolvedPreferences = preferences ?? ProviderPreferences.shared
         self.preferences = resolvedPreferences
         self.enabledProviders = resolvedPreferences.enabledProviders
+        self.manualAccountsStore = ManualAccountsStore.shared
         
         resolvedPreferences.$enabledProviders
             .dropFirst()
@@ -32,6 +35,23 @@ final class ContentViewModel: ObservableObject {
                 Task {
                     await self.loadAllData()
                 }
+            }
+            .store(in: &cancellables)
+        
+        manualAccountsStore.$accounts
+            .receive(on: RunLoop.main)
+            .sink { [weak self] accounts in
+                guard let self else { return }
+                self.manualBalances = accounts.map { account in
+                    BalanceItem(
+                        id: account.id,
+                        provider: .manualAccounts,
+                        title: account.title.isEmpty ? "Без назви" : account.title,
+                        currencyCode: account.currencyCode.uppercased(),
+                        amount: account.amount
+                    )
+                }
+                self.rebuildTotals()
             }
             .store(in: &cancellables)
     }
@@ -68,7 +88,10 @@ final class ContentViewModel: ObservableObject {
         }
         
         rebuildTotals()
-        if privatBalances.isEmpty == false || wiseBalances.isEmpty == false || exchangeRates.isEmpty == false {
+        if privatBalances.isEmpty == false ||
+            wiseBalances.isEmpty == false ||
+            exchangeRates.isEmpty == false ||
+            manualBalances.isEmpty == false {
             lastUpdated = Date()
         } else {
             lastUpdated = nil
@@ -81,6 +104,7 @@ final class ContentViewModel: ObservableObject {
     }
     
     func setProvider(_ provider: BalanceProvider, enabled: Bool) {
+        guard provider != .manualAccounts else { return }
         preferences.set(provider, enabled: enabled)
         if enabled == false {
             switch provider {
@@ -89,17 +113,19 @@ final class ContentViewModel: ObservableObject {
             case .wise:
                 wiseBalances = []
                 exchangeRates = []
+            case .manualAccounts:
+                break
             }
             missingTokens.remove(provider)
             rebuildTotals()
-            if privatBalances.isEmpty && wiseBalances.isEmpty && exchangeRates.isEmpty {
+            if privatBalances.isEmpty && wiseBalances.isEmpty && exchangeRates.isEmpty && manualBalances.isEmpty {
                 lastUpdated = nil
             }
         }
     }
     
     func isProviderEnabled(_ provider: BalanceProvider) -> Bool {
-        enabledProviders.contains(provider)
+        preferences.isEnabled(provider)
     }
     
     private func loadPrivatBalances() async {
@@ -147,7 +173,7 @@ final class ContentViewModel: ObservableObject {
     }
     
     private func rebuildTotals() {
-        let allBalances = privatBalances + wiseBalances
+        let allBalances = privatBalances + wiseBalances + manualBalances
         var accumulator: [String: Decimal] = [:]
         for item in allBalances {
             accumulator[item.currencyCode, default: .zero] += item.amount

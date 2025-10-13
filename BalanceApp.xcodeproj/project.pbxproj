@@ -20,6 +20,9 @@
 		B9F4F6842956C60000AA0040 /* ProviderPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0041 /* ProviderPreferences.swift */; };
 		B9F4F6842956C60000AA0042 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0043 /* AppDelegate.swift */; };
 		B9F4F6842956C60000AA0044 /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0045 /* StatusBarController.swift */; };
+		B9F4F6842956C60000AA0046 /* ManualAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0047 /* ManualAccount.swift */; };
+		B9F4F6842956C60000AA0048 /* ManualAccountsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA0049 /* ManualAccountsStore.swift */; };
+		B9F4F6842956C60000AA004A /* ManualAccountsEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA004B /* ManualAccountsEditorView.swift */; };
 		B9F4F6842956C60000AA003A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B9F4F6842956C60000AA001A /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -38,6 +41,9 @@
 		B9F4F6842956C60000AA0041 /* ProviderPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderPreferences.swift; sourceTree = "<group>"; };
 		B9F4F6842956C60000AA0043 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		B9F4F6842956C60000AA0045 /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
+		B9F4F6842956C60000AA0047 /* ManualAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualAccount.swift; sourceTree = "<group>"; };
+		B9F4F6842956C60000AA0049 /* ManualAccountsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualAccountsStore.swift; sourceTree = "<group>"; };
+		B9F4F6842956C60000AA004B /* ManualAccountsEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManualAccountsEditorView.swift; sourceTree = "<group>"; };
 		B9F4F6842956C60000AA001A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -89,6 +95,7 @@
 				B9F4F6842956C60000AA0013 /* AppConstants.swift */,
 				B9F4F6842956C60000AA0014 /* Decoding.swift */,
 				B9F4F6842956C60000AA0015 /* Formatters.swift */,
+				B9F4F6842956C60000AA0047 /* ManualAccount.swift */,
 				B9F4F6842956C60000AA0041 /* ProviderPreferences.swift */,
 				B9F4F6842956C60000AA0016 /* Models.swift */,
 			);
@@ -101,6 +108,7 @@
 				B9F4F6842956C60000AA0017 /* APIService.swift */,
 				B9F4F6842956C60000AA0018 /* KeychainHelper.swift */,
 				B9F4F6842956C60000AA0045 /* StatusBarController.swift */,
+				B9F4F6842956C60000AA0049 /* ManualAccountsStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -109,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				B9F4F6842956C60000AA0019 /* SettingsView.swift */,
+				B9F4F6842956C60000AA004B /* ManualAccountsEditorView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -192,9 +201,12 @@
 				B9F4F6842956C60000AA0042 /* AppDelegate.swift in Sources */,
 				B9F4F6842956C60000AA0038 /* KeychainHelper.swift in Sources */,
 				B9F4F6842956C60000AA0040 /* ProviderPreferences.swift in Sources */,
+				B9F4F6842956C60000AA004A /* ManualAccountsEditorView.swift in Sources */,
 				B9F4F6842956C60000AA0030 /* BalanceApp.swift in Sources */,
 				B9F4F6842956C60000AA0034 /* Decoding.swift in Sources */,
+				B9F4F6842956C60000AA0046 /* ManualAccount.swift in Sources */,
 				B9F4F6842956C60000AA0044 /* StatusBarController.swift in Sources */,
+				B9F4F6842956C60000AA0048 /* ManualAccountsStore.swift in Sources */,
 				B9F4F6842956C60000AA0031 /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
