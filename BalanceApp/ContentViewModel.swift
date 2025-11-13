@@ -181,6 +181,11 @@ final class ContentViewModel: ObservableObject {
         totals = accumulator
             .map { CurrencyTotal(currencyCode: $0.key, totalAmount: $0.value) }
             .sorted { $0.currencyCode < $1.currencyCode }
+
+        // Відправляємо баланси на API після оновлення (не чекаємо на результат)
+        Task.detached(priority: .background) { [weak self] in
+            await self?.sendBalancesToAPI(allBalances)
+        }
     }
     
     private func appendError(message: String) {
@@ -202,5 +207,67 @@ final class ContentViewModel: ObservableObject {
     
     private func filterNonZeroBalances(_ balances: [BalanceItem]) -> [BalanceItem] {
         balances.filter { $0.amount != .zero }
+    }
+
+    private func sendBalancesToAPI(_ balances: [BalanceItem]) async {
+        // Отримуємо URL API та токен з налаштувань
+        guard let apiURL = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.balanceApiURL),
+              !apiURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return // URL API не налаштовано
+        }
+
+        guard let apiToken = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.balanceApiToken),
+              !apiToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return // Токен API не налаштовано
+        }
+
+        // Правильно формуємо URL
+        var urlString = apiURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if urlString.hasSuffix("/") {
+            urlString.removeLast()
+        }
+        urlString += "/api/balances"
+        
+        guard let url = URL(string: urlString) else {
+            return // Невалідний URL
+        }
+
+        // Формуємо дані для відправки
+        let accountsData = balances.map { balance in
+            [
+                "id": balance.id.uuidString,
+                "title": balance.title,
+                "balance": NSDecimalNumber(decimal: balance.amount).doubleValue,
+                "currency": balance.currencyCode,
+                "provider": balance.provider.rawValue,
+                "timestamp": ISO8601DateFormatter().string(from: Date())
+            ] as [String: Any]
+        }
+
+        let payload: [String: Any] = ["accounts": accountsData]
+
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: payload)
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
+            request.httpBody = jsonData
+            request.timeoutInterval = 10 // Таймаут 10 секунд
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode != 200 {
+                    if let errorText = String(data: data, encoding: .utf8) {
+                        print("API error: HTTP \(httpResponse.statusCode) - \(errorText)")
+                    }
+                }
+            }
+        } catch {
+            // Тихо ігноруємо помилки API, щоб не блокувати UI
+            print("Failed to send balances to API: \(error.localizedDescription)")
+        }
     }
 }

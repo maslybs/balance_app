@@ -405,6 +405,8 @@ private struct InlineSettingsView: View {
     
     @State private var privatToken: String = ""
     @State private var wiseToken: String = ""
+    @State private var balanceApiURL: String = ""
+    @State private var balanceApiToken: String = ""
     @State private var manualDrafts: [ManualAccountDraft] = []
     @State private var statusMessage: String?
     @State private var statusColor: Color = .green
@@ -439,6 +441,14 @@ private struct InlineSettingsView: View {
             Divider()
             
             VStack(alignment: .leading, spacing: 12) {
+                Text("API для балансів")
+                    .font(.subheadline.weight(.semibold))
+                TextField("URL API для відправки балансів", text: $balanceApiURL)
+                    .textFieldStyle(.roundedBorder)
+                SecureField("Токен доступу до API", text: $balanceApiToken)
+                    .textFieldStyle(.roundedBorder)
+                    .textContentType(.password)
+                
                 Text("PrivatBank (ФОП)")
                     .font(.subheadline.weight(.semibold))
                 SecureField("Введіть токен PrivatBank (ФОП)", text: $privatToken)
@@ -505,12 +515,16 @@ private struct InlineSettingsView: View {
     private func loadTokens() {
         privatToken = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.privatToken) ?? ""
         wiseToken = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.wiseToken) ?? ""
+        balanceApiURL = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.balanceApiURL) ?? ""
+        balanceApiToken = KeychainHelper.shared.retrieveToken(forKey: KeychainKey.balanceApiToken) ?? ""
         statusMessage = nil
     }
     
     private func saveSettings() {
         let privatValue = privatToken.trimmingCharacters(in: .whitespacesAndNewlines)
         let wiseValue = wiseToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiUrlValue = balanceApiURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiTokenValue = balanceApiToken.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             if privatValue.isEmpty {
                 try KeychainHelper.shared.deleteToken(forKey: KeychainKey.privatToken)
@@ -521,6 +535,16 @@ private struct InlineSettingsView: View {
                 try KeychainHelper.shared.deleteToken(forKey: KeychainKey.wiseToken)
             } else {
                 try KeychainHelper.shared.saveToken(wiseValue, forKey: KeychainKey.wiseToken)
+            }
+            if apiUrlValue.isEmpty {
+                try KeychainHelper.shared.deleteToken(forKey: KeychainKey.balanceApiURL)
+            } else {
+                try KeychainHelper.shared.saveToken(apiUrlValue, forKey: KeychainKey.balanceApiURL)
+            }
+            if apiTokenValue.isEmpty {
+                try KeychainHelper.shared.deleteToken(forKey: KeychainKey.balanceApiToken)
+            } else {
+                try KeychainHelper.shared.saveToken(apiTokenValue, forKey: KeychainKey.balanceApiToken)
             }
             let manualAccounts = try buildManualAccounts()
             manualAccountsStore.replace(with: manualAccounts)
@@ -539,8 +563,12 @@ private struct InlineSettingsView: View {
         do {
             try KeychainHelper.shared.deleteToken(forKey: KeychainKey.privatToken)
             try KeychainHelper.shared.deleteToken(forKey: KeychainKey.wiseToken)
+            try KeychainHelper.shared.deleteToken(forKey: KeychainKey.balanceApiURL)
+            try KeychainHelper.shared.deleteToken(forKey: KeychainKey.balanceApiToken)
             privatToken = ""
             wiseToken = ""
+            balanceApiURL = ""
+            balanceApiToken = ""
             statusColor = .green
             statusMessage = "Токени видалено."
         } catch {

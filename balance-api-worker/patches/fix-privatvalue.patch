@@ -1,0 +1,14 @@
+--- a/BalanceApp/ContentView.swift
++++ b/BalanceApp/ContentView.swift
+@@ -529,7 +529,7 @@
+         let apiTokenValue = balanceApiToken.trimmingCharacters(in: .whitespacesAndNewlines)
+         do {
+             if privatValue.isEmpty {
+                 try KeychainHelper.shared.deleteToken(forKey: KeychainKey.privatToken)
+             } else {
+-                try KeychainHelper.shared.saveToken(privатValue, forKey: KeychainKey.privatToken)
++                try KeychainHelper.shared.saveToken(privatValue, forKey: KeychainKey.privatToken)
+             }
+             if wiseValue.isEmpty {
+                 try KeychainHelper.shared.deleteToken(forKey: KeychainKey.wiseToken)
+             } else {

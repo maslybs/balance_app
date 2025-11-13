@@ -29,3 +29,7 @@ build.log
 /releases/BalanceApp.app
 
 
+/balance-api-worker/wrangler.toml
+/balance-api-worker/node_modules
+/balance-api-worker/package-lock.json
+.claude
