@@ -91,17 +91,20 @@ async function handleUpdateBalances(request, env, corsHeaders) {
       });
     }
 
-    // Логування отриманих даних
-    console.log('Received balances update:', {
-      timestamp: getUtcPlus3Timestamp(),
-      accountsCount: data.accounts.length,
-      totalBalance: data.accounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0),
-    });
+    const serverTimestamp = getUtcPlus3Timestamp();
+    const enrichedData = {
+      ...data,
+      timestamp: serverTimestamp,
+      accounts: data.accounts.map(acc => ({
+        ...acc,
+        timestamp: serverTimestamp,
+      })),
+    };
 
     // Зберігання даних в KV (якщо налаштовано)
     try {
       if (env && env.BALANCES) {
-        const result = await env.BALANCES.put('latest', JSON.stringify(data));
+        const result = await env.BALANCES.put('latest', JSON.stringify(enrichedData));
         console.log('Data saved to KV:', result);
       }
     } catch (kvError) {
@@ -111,8 +114,8 @@ async function handleUpdateBalances(request, env, corsHeaders) {
     return new Response(JSON.stringify({
       success: true,
       message: 'Balances updated successfully',
-      processedAccounts: data.accounts.length,
-      timestamp: getUtcPlus3Timestamp()
+      processedAccounts: enrichedData.accounts.length,
+      timestamp: serverTimestamp
     }), {
       status: 200,
       headers: {
@@ -274,7 +277,10 @@ function formatBalancesForTelegram(data) {
   // Додаємо час оновлення
   if (accounts[0] && accounts[0].timestamp) {
     const updateTime = new Date(accounts[0].timestamp);
-    text += `\n🕐 Оновлено: ${updateTime.toLocaleString('uk-UA')}`;
+    const formattedTime = updateTime.toLocaleString('uk-UA', {
+      timeZone: 'Europe/Kyiv',
+    });
+    text += `\n🕐 Оновлено: ${formattedTime}`;
   }
 
   return text;
