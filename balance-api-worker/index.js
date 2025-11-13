@@ -156,11 +156,30 @@ async function handleGetBalances(request, env, corsHeaders) {
       console.warn('Failed to get from KV:', kvError);
     }
 
+    const parsedData = data ? JSON.parse(data) : null;
+
+    // Перевірка формату відповіді
+    const url = new URL(request.url);
+    const format = url.searchParams.get('format');
+
+    if (format === 'text') {
+      // Форматування для Telegram
+      const textResponse = formatBalancesForTelegram(parsedData);
+      return new Response(textResponse, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/plain; charset=utf-8',
+        },
+      });
+    }
+
+    // Стандартна JSON відповідь
     return new Response(JSON.stringify({
       success: true,
       message: 'Balance data retrieved successfully',
       timestamp: new Date().toISOString(),
-      data: data ? JSON.parse(data) : null
+      data: parsedData
     }), {
       status: 200,
       headers: {
@@ -184,6 +203,71 @@ async function handleGetBalances(request, env, corsHeaders) {
       },
     });
   }
+}
+
+// Форматування балансів для Telegram
+function formatBalancesForTelegram(data) {
+  if (!data || !data.accounts || data.accounts.length === 0) {
+    return '📊 Баланси\n\nНемає даних про баланси.';
+  }
+
+  const accounts = data.accounts;
+  
+  // Групуємо по провайдерам
+  const byProvider = {};
+  accounts.forEach(acc => {
+    const provider = acc.provider || 'Інше';
+    if (!byProvider[provider]) {
+      byProvider[provider] = [];
+    }
+    byProvider[provider].push(acc);
+  });
+
+  // Рахуємо загальні суми по валютах
+  const totals = {};
+  accounts.forEach(acc => {
+    const currency = acc.currency || 'UAH';
+    totals[currency] = (totals[currency] || 0) + (acc.balance || 0);
+  });
+
+  // Формуємо текст
+  let text = '💰 Баланси рахунків\n\n';
+
+  // Додаємо рахунки по провайдерам
+  const providerEmojis = {
+    'PrivatBank (ФОП)': '🏦',
+    'Wise': '🌍',
+    'Власні рахунки': '📝'
+  };
+
+  Object.keys(byProvider).sort().forEach(provider => {
+    const emoji = providerEmojis[provider] || '💳';
+    text += `${emoji} ${provider}\n`;
+    
+    byProvider[provider].forEach(acc => {
+      const balance = (acc.balance || 0).toFixed(2);
+      const currency = acc.currency || 'UAH';
+      const title = acc.title || 'Без назви';
+      text += `  • ${title}: ${balance} ${currency}\n`;
+    });
+    
+    text += '\n';
+  });
+
+  // Додаємо загальні суми
+  text += '📈 Загальна сума\n';
+  Object.keys(totals).sort().forEach(currency => {
+    const total = totals[currency].toFixed(2);
+    text += `  ${currency}: ${total}\n`;
+  });
+
+  // Додаємо час оновлення
+  if (accounts[0] && accounts[0].timestamp) {
+    const updateTime = new Date(accounts[0].timestamp);
+    text += `\n🕐 Оновлено: ${updateTime.toLocaleString('uk-UA')}`;
+  }
+
+  return text;
 }
 
 // Health check endpoint
