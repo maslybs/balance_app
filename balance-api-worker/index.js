@@ -26,6 +26,10 @@ export default {
       return handleGetBalances(request, env, corsHeaders);
     }
 
+    if (url.pathname === '/api/telegram' && request.method === 'POST') {
+      return handleTelegramWebhook(request, env);
+    }
+
     if (url.pathname === '/api/health' && request.method === 'GET') {
       return handleHealth(corsHeaders);
     }
@@ -46,6 +50,12 @@ function validateToken(request, env) {
 
   const token = authHeader.slice(7); // Видаляємо "Bearer "
   return token === env.API_TOKEN;
+}
+
+// Returns ISO string adjusted to UTC+3 (Kyiv summer time baseline)
+function getUtcPlus3Timestamp() {
+  const utcPlus3 = new Date(Date.now() + 3 * 60 * 60 * 1000);
+  return utcPlus3.toISOString().replace('Z', '+03:00');
 }
 
 // Обробка оновлення балансів
@@ -83,7 +93,7 @@ async function handleUpdateBalances(request, env, corsHeaders) {
 
     // Логування отриманих даних
     console.log('Received balances update:', {
-      timestamp: new Date().toISOString(),
+      timestamp: getUtcPlus3Timestamp(),
       accountsCount: data.accounts.length,
       totalBalance: data.accounts.reduce((sum, acc) => sum + (parseFloat(acc.balance) || 0), 0),
     });
@@ -102,7 +112,7 @@ async function handleUpdateBalances(request, env, corsHeaders) {
       success: true,
       message: 'Balances updated successfully',
       processedAccounts: data.accounts.length,
-      timestamp: new Date().toISOString()
+      timestamp: getUtcPlus3Timestamp()
     }), {
       status: 200,
       headers: {
@@ -178,7 +188,7 @@ async function handleGetBalances(request, env, corsHeaders) {
     return new Response(JSON.stringify({
       success: true,
       message: 'Balance data retrieved successfully',
-      timestamp: new Date().toISOString(),
+      timestamp: getUtcPlus3Timestamp(),
       data: parsedData
     }), {
       status: 200,
@@ -237,7 +247,7 @@ function formatBalancesForTelegram(data) {
   const providerEmojis = {
     'PrivatBank (ФОП)': '🏦',
     'Wise': '🌍',
-    'Власні рахунки': '📝'
+    'Інші рахунки': '📝'
   };
 
   Object.keys(byProvider).sort().forEach(provider => {
@@ -270,12 +280,88 @@ function formatBalancesForTelegram(data) {
   return text;
 }
 
+// Обробка Telegram webhook
+async function handleTelegramWebhook(request, env) {
+  const secretToken = request.headers.get('x-telegram-bot-api-secret-token');
+
+  // Validate Telegram secret token against Wrangler API token
+  if (!secretToken || secretToken !== env.API_TOKEN) {
+    console.warn('Telegram webhook rejected: invalid or missing secret token');
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  try {
+    const update = await request.json();
+    
+    // Перевіряємо чи є повідомлення
+    if (!update.message || !update.message.text) {
+      return new Response('OK', { status: 200 });
+    }
+
+    const chatId = update.message.chat.id;
+    const botToken = env.TELEGRAM_BOT_TOKEN;
+
+    if (!botToken) {
+      console.error('TELEGRAM_BOT_TOKEN not configured');
+      return new Response('OK', { status: 200 });
+    }
+
+    // Отримуємо баланси
+    let data = null;
+    try {
+      if (env && env.BALANCES) {
+        data = await env.BALANCES.get('latest');
+      }
+    } catch (kvError) {
+      console.warn('Failed to get from KV:', kvError);
+    }
+    
+    const parsedData = data ? JSON.parse(data) : null;
+    const responseText = formatBalancesForTelegram(parsedData);
+
+    // Відправляємо відповідь через Telegram Bot API
+    await sendTelegramMessage(botToken, chatId, responseText);
+
+    return new Response('OK', { status: 200 });
+
+  } catch (error) {
+    console.error('Error handling Telegram webhook:', error);
+    return new Response('OK', { status: 200 });
+  }
+}
+
+// Відправка повідомлення через Telegram Bot API
+async function sendTelegramMessage(botToken, chatId, text) {
+  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: 'HTML',
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Telegram API error:', error);
+    }
+  } catch (error) {
+    console.error('Failed to send Telegram message:', error);
+  }
+}
+
 // Health check endpoint
 async function handleHealth(corsHeaders) {
   return new Response(JSON.stringify({
     success: true,
     message: 'Balance API is running',
-    timestamp: new Date().toISOString(),
+    timestamp: getUtcPlus3Timestamp(),
     version: '1.0.0'
   }), {
     status: 200,

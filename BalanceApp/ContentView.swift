@@ -48,7 +48,7 @@ struct ContentView: View {
                     }
                     
                     if viewModel.manualBalances.isEmpty == false {
-                        BalanceProviderSection(title: "Власні рахунки",
+                        BalanceProviderSection(title: "Інші рахунки",
                                                systemImage: BalanceProvider.manualAccounts.accentSystemImageName,
                                                balances: viewModel.manualBalances,
                                                columns: columns(for: viewModel.manualBalances.count),

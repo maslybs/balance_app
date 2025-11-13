@@ -3,7 +3,7 @@ import Foundation
 enum BalanceProvider: String, Identifiable, CaseIterable {
     case privatBank = "PrivatBank (ФОП)"
     case wise = "Wise"
-    case manualAccounts = "Власні рахунки"
+    case manualAccounts = "Інші рахунки"
     
     var id: String { rawValue }
     
@@ -14,7 +14,7 @@ enum BalanceProvider: String, Identifiable, CaseIterable {
         case .wise:
             return "Wise"
         case .manualAccounts:
-            return "Власні рахунки"
+            return "Інші рахунки"
         }
     }
     
