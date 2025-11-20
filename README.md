@@ -1,5 +1,9 @@
 # Balance App
 
+Balance App is a macOS menu bar utility that displays balances from your selected banking services and live exchange rates. You can manage provider connections and only see the banks you enable and supply tokens for.
+
+=============
+
 Balance App — це меню-бар застосунок для macOS, що показує баланси з вибраних банківських сервісів і курси валют. Програма дозволяє керувати підключеннями до постачальників і відображає лише ті банки, які ви увімкнули та для яких задали токени.
 
 ## Підтримувані банки
