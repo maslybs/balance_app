@@ -18,6 +18,11 @@ final class ContentViewModel: ObservableObject {
     private let preferences: ProviderPreferences
     private let manualAccountsStore: ManualAccountsStore
     private var cancellables = Set<AnyCancellable>()
+
+    // Автоматичне оновлення
+    private var autoRefreshTimer: Timer?
+    private var lastAutoRefreshDate: Date?
+    private let scheduledHours: [Int] = [12, 21] // Години автоматичного оновлення
     
     init(apiService: APIService = .shared, preferences: ProviderPreferences? = nil) {
         self.apiService = apiService
@@ -54,6 +59,13 @@ final class ContentViewModel: ObservableObject {
                 self.rebuildTotals()
             }
             .store(in: &cancellables)
+
+        // Запускаємо автоматичне оновлення
+        startAutoRefresh()
+    }
+
+    deinit {
+        autoRefreshTimer?.invalidate()
     }
     
     func loadAllData() async {
@@ -101,6 +113,52 @@ final class ContentViewModel: ObservableObject {
     
     func refreshManually() async {
         await loadAllData()
+    }
+
+    // MARK: - Автоматичне оновлення
+
+    func startAutoRefresh() {
+        stopAutoRefresh()
+        // Перевіряємо час кожну хвилину
+        autoRefreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.checkScheduledRefresh()
+            }
+        }
+        // Зберігаємо на main run loop
+        if let timer = autoRefreshTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
+    }
+
+    func stopAutoRefresh() {
+        autoRefreshTimer?.invalidate()
+        autoRefreshTimer = nil
+    }
+
+    private func checkScheduledRefresh() {
+        let calendar = Calendar.current
+        let now = Date()
+        let hour = calendar.component(.hour, from: now)
+        let minute = calendar.component(.minute, from: now)
+
+        // Перевіряємо чи поточна година є у списку запланованих (з точністю до хвилини 0)
+        guard scheduledHours.contains(hour) && minute == 0 else { return }
+
+        // Перевіряємо чи ми вже оновлювались у цю годину
+        if let lastRefresh = lastAutoRefreshDate {
+            let lastHour = calendar.component(.hour, from: lastRefresh)
+            let isSameDay = calendar.isDate(lastRefresh, inSameDayAs: now)
+            if isSameDay && lastHour == hour {
+                return // Вже оновлювались у цю годину сьогодні
+            }
+        }
+
+        // Запускаємо оновлення
+        lastAutoRefreshDate = now
+        Task {
+            await loadAllData()
+        }
     }
     
     func setProvider(_ provider: BalanceProvider, enabled: Bool) {
